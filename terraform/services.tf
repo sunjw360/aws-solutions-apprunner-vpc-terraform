@@ -41,7 +41,8 @@ resource "aws_apprunner_service" "service" {
 resource "aws_apprunner_vpc_connector" "connector" {
   vpc_connector_name = "petclinic_vpc_connector"
   subnets            = aws_subnet.private[*].id
-  security_groups    = [aws_security_group.db-sg.id]
+  security_groups    = ["${aws_security_group.service-sg.id}"]
+  depends_on = [aws_security_group.service-sg]
 }
 
 output "apprunner_service_url" {

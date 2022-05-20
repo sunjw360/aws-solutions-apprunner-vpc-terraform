@@ -37,7 +37,7 @@ resource "aws_security_group" "db-sg" {
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    security_groups = ["${aws_security_group.service-sg.id}"]
   }
 
   egress {
@@ -51,13 +51,53 @@ resource "aws_security_group" "db-sg" {
     Name = "${var.stack}-db-sg"
   }
 }
+
+resource "aws_security_group" "service-sg" {
+  name        = "${var.stack}-service-sg"
+  description = "Security gruop asspciated with the AppRunner service VPC connector"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+
+  ingress {
+    from_port   = 8
+    to_port     = 0
+    protocol    = "icmp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.stack}-service-sg"
+  }
+} 
 ```
 #### VPC connector
 ```bash
 resource "aws_apprunner_vpc_connector" "connector" {
   vpc_connector_name = "petclinic_vpc_connector"
   subnets            = aws_subnet.private[*].id
-  security_groups    = [aws_security_group.db-sg.id]
+  security_groups    = ["${aws_security_group.service-sg.id}"]
+  depends_on = [aws_security_group.service-sg]
 }
 ```
 #### App Runner service
